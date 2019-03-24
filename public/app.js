@@ -1,20 +1,20 @@
 // Grab the articles as a json
-$.getJSON("/articles", function(data) {
+$.getJSON("/articles", function (data) {
   // For each one
   for (var i = 0; i < data.length; i++) {
     // Display the apropos information on the page
-    $("#articles").prepend("<p data-id='" + data[i]._id + "'>" + data[i].title + "<br />" + "<a href=" + data[i].link + ">Link to the story</a>" + "</p>");
+    $("#articles").prepend("<p class='article' data-id='" + data[i]._id + "'>" + data[i].title + "<br />" + "<a href=" + data[i].link + ">Link to the story</a>" + "</p>");
   }
 });
 
-$("#scrape").on("click", function(){
-  $.get("/scrape").then(function(){
+$("#scrape").on("click", function () {
+  $.get("/scrape").then(function () {
     location.reload();
   });
 });
 
 // Whenever someone clicks a p tag
-$(document).on("click", "p", function() {
+$(document).on("click", "p.article", function () {
   // Empty the notes from the note section
   $("#notes").empty();
   // Save the id from the p tag
@@ -26,7 +26,7 @@ $(document).on("click", "p", function() {
     url: "/articles/" + thisId
   })
     // With that done, add the note information to the page
-    .then(function(data) {
+    .then(function (data) {
       console.log(data);
       // The title of the article
       $("#notes").append("<h2>" + data.title + "</h2>");
@@ -38,17 +38,30 @@ $(document).on("click", "p", function() {
       $("#notes").append("<button data-id='" + data._id + "' id='savenote'>Save Note</button>");
 
       // If there's a note in the article
+      if (data.note.length > 0) {
+        for (var i = 0; i < data.note.length; i++) {
+          console.log(data.note[i]);
+          var container = $("<div>");
+          container.append(`<h5>${data.note[i].title}</h5>`)
+          container.append(`<p>${data.note[i].body}</p>`)
+          container.append(`<button class="deleteNote" data-noteID="${data.note[i]._id}" data-articleID="${data._id}">delete</button>`)
+          $("#notes").append(container)
+        }
+
+      }
+
+      /* If there's a note in the article
       if (data.note) {
         // Place the title of the note in the title input
         $("#titleinput").val(data.note.title);
         // Place the body of the note in the body textarea
         $("#bodyinput").val(data.note.body);
-      }
+      }*/
     });
 });
 
 // When you click the savenote button
-$(document).on("click", "#savenote", function() {
+$(document).on("click", "#savenote", function () {
   // Grab the id associated with the article from the submit button
   var thisId = $(this).attr("data-id");
 
@@ -64,14 +77,22 @@ $(document).on("click", "#savenote", function() {
     }
   })
     // With that done
-    .then(function(data) {
+    .then(function (data) {
       // Log the response
       console.log(data);
-      // Empty the notes section
-      $("#notes").empty();
     });
 
   // Also, remove the values entered in the input and textarea for note entry
   $("#titleinput").val("");
   $("#bodyinput").val("");
 });
+
+$(document).on("click", ".deleteNote", function () {
+  var noteID = $(this).attr("data-noteID");
+  $.ajax({
+    method:"POST", 
+    url: `/note/${noteID}`
+  }).then(function() {
+    $("#notes").empty();
+  })
+})
